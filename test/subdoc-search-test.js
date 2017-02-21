@@ -14,7 +14,7 @@ var AuthorSchema = new Schema({
 });
 AuthorSchema.set('versionKey', false);
 
-var BookSchema = new Schema({
+var BoookSchema = new Schema({
   title: {
     type: String,
     es_indexed: true
@@ -28,17 +28,17 @@ var BookSchema = new Schema({
     }
   ]
 });
-BookSchema.set('versionKey', false);
+BoookSchema.set('versionKey', false);
 
-BookSchema.plugin(mongoosastic, {
+BoookSchema.plugin(mongoosastic, {
   index: 'es-index',
   esClient: config.getClient(),
   model: function() {
-    return mongoose.model('Book');
+    return mongoose.model('Boook');
   }
 });
 
-var Book = mongoose.model('Book', BookSchema)
+var Boook = mongoose.model('Boook', BoookSchema)
 var Author = mongoose.model('Author', AuthorSchema)
 
 describe('Feature: reIndex document if subdocument changed!', function() {
@@ -51,7 +51,7 @@ describe('Feature: reIndex document if subdocument changed!', function() {
         config.deleteIndexIfExists(['es-index'], next);
       },
       function(next) {
-        Book.createMapping(next);
+        Boook.createMapping(next);
       }
     ], done)
   });
@@ -65,7 +65,7 @@ describe('Feature: reIndex document if subdocument changed!', function() {
         config.deleteIndexIfExists(['es-index'], next);
       }
     ], done)
-    
+
   })
 
   describe('subdocument configure with es_schema', function() {
@@ -78,7 +78,7 @@ describe('Feature: reIndex document if subdocument changed!', function() {
           author.save(next);
         },
         function(next) {
-          book = new Book({title: 'book title'});
+          book = new Boook({title: 'book title'});
           next(null, book, 1);
         }
       ], function(err, results) {
@@ -89,13 +89,16 @@ describe('Feature: reIndex document if subdocument changed!', function() {
         book.authors.push(author);
         book.save();
 
-        book.once('es-indexed', done);
+        book.once('es-indexed', function(err) {
+          book.authors[0].should.not.be.instanceof(Author)
+          done(err)
+        });
       })
     });
 
     it('should find subdoc added', function(done) {
       setTimeout(function() {
-        Book.search(undefined, function(err, results) {
+        Boook.search(undefined, function(err, results) {
           results.hits.total.should.eql(1);
           results.hits.hits[0]._source.authors.length.should.eql(1);
           results.hits.hits[0]._source.authors[0].name.should.eql('author name');
@@ -111,7 +114,7 @@ describe('Feature: reIndex document if subdocument changed!', function() {
 
       async.series([
         function(next) {
-            another.save(next);
+          another.save(next);
         },
         function(next) {
           book.authors.push(another);
@@ -123,7 +126,7 @@ describe('Feature: reIndex document if subdocument changed!', function() {
         }
 
         setTimeout(function() {
-          Book.search(undefined, function(err, results) {
+          Boook.search(undefined, function(err, results) {
             results.hits.total.should.eql(1);
             results.hits.hits[0]._source.authors.length.should.eql(2);
             results.hits.hits[0]._source.authors[1].name.should.eql('newname');
